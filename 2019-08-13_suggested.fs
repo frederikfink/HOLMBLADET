@@ -1,4 +1,60 @@
 module Question1
+    
+type Sum<'A, 'B> =
+    | Left of 'A
+    | Right of 'B
+
+(* Question 1.1 *)
+
+let sum1 = Left [5]
+let sum2 = Right (Some true)
+
+let sumMap f g =
+    function 
+    | Left a -> f a
+    | Right b -> g b
+
+(* Question 1.2 *)
+
+type SumColl<'A, 'B> =
+| Nil
+| CLeft of 'A * SumColl<'A, 'B>
+| CRight of 'B * SumColl<'A, 'B>
+
+let sumColl = CLeft ([true], CRight (42, Nil))
+
+let rec ofList =
+    function
+    | [] -> Nil
+    | Left a :: ss -> CLeft (a, ofList ss)
+    | Right b :: ss -> CRight (b, ofList ss)
+
+(* Question 1.3 *)
+
+let reverse lst =
+    let rec aux acc =
+        function
+        | Nil -> acc
+        | CLeft (a, ss) -> aux (CLeft (a, acc)) ss
+        | CRight (b, ss) -> aux (CRight (b, acc)) ss
+
+    aux Nil lst
+
+(* Question 1.4 *)
+
+let lcons ss a = CLeft(a, ss)
+let rcons ss b = CRight(b, ss)
+
+let ofList2 lst =
+    List.foldBack (fun x acc -> sumMap (lcons acc) (rcons acc) x) lst Nil
+
+(* Question 1.5 *)
+
+let rec foldBackSumColl f g =
+    function
+    | Nil -> id
+    | CLeft (a, ss)  -> f a << foldBackSumColl f g ss
+    | CRight (b, ss) -> g b << foldBackSumColl f g ss
 
 module Question2
     let f s =
