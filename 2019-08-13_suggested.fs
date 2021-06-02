@@ -189,3 +189,133 @@ module Question3
             }
 
         aux (goldenRectangleSeq b) (goldenTriangleSeq b)
+
+
+module Question4Solution
+
+    (* Question 4.1 *)
+
+    type colour = Red | Green | Blue | Purple | Orange | Yellow
+    type shape  = Square | Circle | Star | Diamond | Club | Cross
+
+    type tile = Tile of colour * shape
+
+    let mkColour =
+        function
+        | "red"    -> Red
+        | "green"  -> Green
+        | "blue"   -> Blue
+        | "purple" -> Purple
+        | "orange" -> Orange
+        | "yellow" -> Yellow
+        | _        -> failwith "Invalid colour"
+
+    let mkShape =
+        function
+        | "square"  -> Square
+        | "circle"  -> Circle
+        | "star"    -> Star
+        | "diamond" -> Diamond
+        | "club"    -> Club
+        | "cross"   -> Cross
+        | _        -> failwith "Invalid shape"
+
+    let mkTile c s = Tile(mkColour c, mkShape s)
+
+    let colourToString =
+        function
+        | Red    -> "red"
+        | Green  -> "green"
+        | Blue   -> "blue"
+        | Purple -> "purple"
+        | Orange -> "orange"
+        | Yellow -> "yellow"
+
+    let shapeToString =
+        function
+        | Square  -> "square"
+        | Circle  -> "circle"
+        | Star    -> "star"
+        | Diamond -> "diamond"
+        | Club    -> "club"
+        | Cross   -> "cross"
+
+    let tileToString (Tile(c, s)) = 
+        sprintf "%s %s" (colourToString c) (shapeToString s)
+
+    (* Question 4.2 *)
+
+    let validTiles ts (Tile (c, s)) =
+        List.forall (fun (Tile (c', s')) -> c = c' && s <> s') ts || 
+        List.forall (fun (Tile (c', s')) -> c <> c' && s = s') ts
+
+    (* Question 4.3 optional *)
+
+    type coord = Coord of int * int
+    type board = Board of Map<coord, tile>
+    type direction = Left | Right | Up | Down
+
+    let moveCoord (Coord (x, y)) =
+        function
+        | Left  -> Coord (x - 1, y)
+        | Right -> Coord (x + 1, y)
+        | Up    -> Coord (x, y - 1)
+        | Down  -> Coord (x, y + 1)
+
+    let rec collectTiles (Board b) c d =
+        match Map.tryFind c b with
+        | Some t -> t :: collectTiles (Board b) (moveCoord c d) d
+        | None -> []
+
+    (* Question 4.4 *)
+    
+    let placeTile (coord, tile) (Board b as board) =
+        let f d = collectTiles board (moveCoord coord d) d
+        if Option.isNone (Map.tryFind coord b) && 
+           validTiles (f Left @ f Right) tile && 
+           validTiles (f Up @ f Down) tile then
+            Some (Board (Map.add coord tile b))
+        else
+            None
+
+    (* Question 4.5 *)
+
+    (* You may use *either* railroad-oriented programming or computation expressions.
+       You do not have to use both *)
+
+    (* Railroad-oriented programming *)
+    let ret = Some
+    let bind f =
+        function
+        | None   -> None
+        | Some x -> f x
+    let (>>=) x f = bind f x
+
+    (* Computation expressions *)
+    type opt<'a> = 'a option
+    type OptBuilderClass() =
+        member t.Return (x : 'a) : opt<'a> = ret x
+        member t.ReturnFrom (x : opt<'a>) = x
+        member t.Bind (o : opt<'a>, f : 'a -> opt<'b>) : opt<'b> = bind f o
+    let opt = new OptBuilderClass()
+
+    let placeTiles coords board = List.foldBack (bind << placeTile) coords (ret board)
+
+    // Alternative solutions
+
+    let rec placeTiles2 coords board =
+        match coords with
+        | [] -> ret board
+        | ct::cts -> placeTile ct board >>= fun b -> placeTiles2 cts b
+
+    let rec placeTiles3 coords board =
+        opt {
+            match coords with
+            | [] -> return board
+            | ct :: cts -> 
+                let! newBoard = placeTile ct board
+                return! placeTiles3 cts newBoard
+        }
+
+
+
