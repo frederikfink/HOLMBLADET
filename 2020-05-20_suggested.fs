@@ -217,3 +217,33 @@ module Question2
             | y :: ys -> aux (fun result -> c (y :: result)) ys
 
         aux id lst
+        
+    (* 4: Revers Polish Notation *)
+
+(* Question 4.1 *)
+
+    type stack = int list
+
+    let emptyStack = []
+
+(* Question 4.2 *)
+
+    type SM<'a> = S of (stack -> ('a * stack) option)
+
+    let ret x = S (fun s -> Some (x, s))
+    let fail  = S (fun _ -> None)
+    let bind f (S a) : SM<'b> = 
+        S (fun s -> 
+            match a s with 
+            | Some (x, s') -> 
+                let (S g) = f x             
+                g s'
+            | None -> None)
+        
+    let (>>=) x f = bind f x
+    let (>>>=) x y = x >>= (fun _ -> y)
+
+    let evalSM (S f) = f emptyStack 
+
+    let push x = S (fun s -> Some ((), x::s))
+    let pop = S (function [] -> None | x :: xs -> Some (x, xs))
