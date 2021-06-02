@@ -233,7 +233,83 @@ module Question2
                 aux (fun result -> c (x :: result)) xs
 
         aux id lst
-        
+
+module Question3
+(* Question 3.1 *)
+
+    (* the numbers in my bigInt type are assumed to be stored in reverse order *)
+
+    type bigInt = int list
+
+    let fromString (str : string) = [for c in str -> int c - int '0'] |> List.rev
+    let toString bi =
+        bi |>
+        List.rev |>
+        List.map ((+) (int '0') >> char >> string) |>
+        List.fold (+) "" 
+
+(* Question 3.2 *)
+
+    let add a b =
+        let rec aux carry acc xs =
+            function
+            | [] when xs = [] && carry = 0 -> List.rev acc
+            | [] when xs = []              -> List.rev (carry::acc)
+            | [] -> aux carry acc [] xs
+            | y :: ys ->
+                let (x, xs) = match xs with | [] -> (0, []) | x :: xs -> (x, xs)
+                let result = x + y + carry
+                aux (result / 10) ((result % 10)::acc) xs ys
+
+        aux 0 [] a b
+
+
+(* Question 3.3 *)
+
+    let multSingle a i =
+        let rec aux carry acc =
+            function
+            | [] when carry = 0 -> List.rev acc
+            | []                -> List.rev (carry::acc)
+            | x :: xs ->
+                let result = x * i + carry
+                aux (result / 10) ((result % 10)::acc) xs
+
+        aux 0 [] a
+
+(* Question 3.4 *)
+
+    let mult a b =
+        let rec aux acc zeroes xs =
+            function
+            | [] when xs = [] -> List.fold add (fromString "0") acc
+            | []              -> aux acc zeroes [] xs
+            | y :: ys ->
+                aux ([yield! zeroes; yield! multSingle xs y]::acc) (0::zeroes) xs ys
+
+        aux [] [] a b
+            
+            
+
+(* Question 3.5 *)
+
+    let inc x = add x (fromString "1")
+
+    let factAux (x : int) num =
+        let rec aux acc x =
+            function
+            | 0 -> acc
+            | y -> aux (mult x acc) (inc x) (y - 1)
+
+        async {return aux (fromString "1") (fromString (string x)) num}
+
+    let fact x numThreads =
+        seq {for i in 0..numThreads - 1 do
+                let numsPerThread = x / numThreads
+                yield factAux (numsPerThread * i + 1) numsPerThread} |>
+        Async.Parallel |>
+        Async.RunSynchronously |>
+        Array.fold mult (fromString "1")        
         
         
 module Question4
