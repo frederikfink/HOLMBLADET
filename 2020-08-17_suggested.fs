@@ -163,3 +163,91 @@ module Question2
                 aux (fun result -> c (x :: result)) xs
 
         aux id lst
+        
+        
+        
+ (*##### 4 #####*) 
+   type 'a llist =
+    | Cons of (unit -> ('a * 'a llist))
+
+    let rec llzero = Cons (fun () -> (0, llzero))
+
+(* Question 4.1 *)
+
+    let step (Cons f) = f ()
+    let cons x ll     = Cons (fun () -> x, ll)
+
+(* Question 4.2 *)
+
+    let init f =
+        let rec aux x = Cons (fun () -> (f x, aux (x + 1)))
+
+        aux 0
+
+(* Question 4.3 *)
+
+    let rec llmap f ll =
+        let (hd, tl) = step ll
+        Cons (fun () -> f hd, llmap f tl)
+ 
+(* Question 4.4 *)
+
+    let rec filter f ll =
+        let (hd, tl) = step ll
+        if f hd then
+            Cons (fun () -> hd, filter f tl)
+        else
+            filter f tl
+
+(* Question 4.5 *)
+
+    let takeFirst x ll =
+        let rec aux acc ll =
+            function
+            | 0 -> (List.rev acc, ll)
+            | x ->
+                let (hd, tl) = step ll
+                aux (hd::acc) tl (x - 1)
+
+        aux [] ll x
+
+
+
+(* Question 4.6 *)
+
+
+    let rec unfold f st =
+        let (x, st') = f st
+        Cons (fun () -> x, unfold f st')
+
+    (* Consider the following two implementations of Fibonacci sequences fibll1 and fibll2: *)
+
+    let fib x =
+        let rec aux acc1 acc2 =
+            function
+            | 0 -> acc1
+            | x -> aux acc2 (acc1 + acc2) (x - 1)
+
+        aux 0 1 x
+
+    (* Uncomment after you have implemented init and unfold *)
+
+
+    let fibll1 = init fib
+    let fibll2 = unfold (fun (acc1, acc2) -> (acc1, (acc2, acc1 + acc2))) (0, 1)
+    
+    (* 
+
+    Q: Both fibll1 and fibll2 correctly calculate a lazy list of Fibonacci numbers. 
+       Which of these two lazy lists is the most efficient implementation and why?
+    
+    A:
+        the complexity of calculating every element of fibll1 is linear with respect to the
+        element's index in the sequence. This is because fib is a linear tail recursive algorithm.
+
+        fibll2, however, is constant as it only requires the previous state to compute the next element
+        in the sequence.
+
+        Both implementations are fast, but fibll2 is the fastest.
+    
+    *)
