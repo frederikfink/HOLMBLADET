@@ -1,5 +1,75 @@
 module Question1
 
+(* 1: Binary search trees *)
+
+    type 'a bintree = 
+    | Leaf
+    | Node of 'a bintree * 'a * 'a bintree
+
+(* Question 1.1 *)
+
+    let rec insert x =
+        function
+        | Leaf                      -> Node (Leaf, x, Leaf)
+        | Node(l, y, r) when x <= y -> Node (insert x l, y, r)
+        | Node(l, y, r)             -> Node (l, y, insert x r)
+    
+(* Question 1.2 *)
+
+    let fromList lst =
+        let rec aux acc =
+            function
+            | []      -> acc
+            | x :: xs -> aux (insert x acc) xs
+
+        aux Leaf lst
+
+(* Question 1.3 *)
+
+    let rec fold f acc =
+        function
+        | Leaf -> acc
+        | Node(l, x, r) -> fold f (f (fold f acc l) x) r
+
+    let rec foldBack f acc =
+        function
+        | Leaf -> acc
+        | Node(l, x, r) -> foldBack f (f (foldBack f acc r) x) l
+
+    let inOrder tree = foldBack (fun acc x -> x :: acc) [] tree
+
+(* Question 1.4 *)
+
+    (* 
+
+    Q: Consider the following map function
+
+    *)
+
+    let rec badMap f =
+      function
+      | Leaf -> Leaf
+      | Node (l, y, r) -> Node (badMap f l, f y, badMap f r)
+
+    (*
+    Even though the type of this function is `('a -> 'b) -> 'a bintree -> 'b bintree` 
+    as we would expect from a map function, this  function does not do what
+    we want it to do. What is the problem? Provide an example to demonstrate the problem.
+
+    A: The mapping function does not respect the binary search tree property. Since the
+       function f can map values of nodes in a valid tree to absolutely any other value there is no
+       way to guarantee that a tree after a map is still a binary search tree.
+       
+       An example of this would be
+       
+       badMap (fun x -> -x) (Node (2, Node (1, Leaf, Leaf), Node(3, Leaf, Leaf))) which takes a valid search tree as argument,
+       but which returns (Node (-2, Node (-1, Leaf, Leaf), Node(-3, Leaf, Leaf)))
+       which has flipped the ordering of the tree.
+    *)
+
+    let rec map f tree = fold (fun acc x -> insert (f x) acc) Leaf tree 
+
+
 module Question2
 (* 2: Code Comprehension *)
     let rec foo =
